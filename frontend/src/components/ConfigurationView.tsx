@@ -77,11 +77,12 @@ export default function ConfigurationView({
   }, [config.NamerID, config.DateTimeFormat, config.TemplateString, config.RandomLength])
 
   // Setup stepper steps
+  const watchPath = config.WatchPaths?.[0] || ''
   const stepperSteps = [
     {
       label: 'Pick Folder',
-      hint: config.WatchPath ? config.WatchPath.split(/[\\/]/).pop() || config.WatchPath : 'No folder selected',
-      done: Boolean(config.WatchPath),
+      hint: watchPath ? watchPath.split(/[\\/]/).pop() || watchPath : 'No folder selected',
+      done: Boolean(watchPath),
     },
     {
       label: 'Configure Pattern',
