@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Folder, FolderOpen, Eye, FileText, Cog, Play, Square, Info } from 'lucide-react'
 import type { Config, NamerInfo, ActionInfo, PatternInfo } from '../context/AppContext'
+import SetupStepper from './shared/SetupStepper'
 
 interface Props {
   config: Config
@@ -32,6 +33,68 @@ export default function ConfigurationView({
   const [showNamingInfo, setShowNamingInfo] = useState(false)
   const [showActionInfo, setShowActionInfo] = useState(false)
 
+  // Live rename preview
+  const renamePreview = useMemo(() => {
+    try {
+      const now = new Date()
+      const year  = now.getFullYear().toString()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day   = String(now.getDate()).padStart(2, '0')
+      const hour  = String(now.getHours()).padStart(2, '0')
+      const min   = String(now.getMinutes()).padStart(2, '0')
+      const sec   = String(now.getSeconds()).padStart(2, '0')
+      const date  = `${year}-${month}-${day}`
+      const time  = `${hour}-${min}`
+      const datetime = `${year}-${month}-${day}_${hour}-${min}-${sec}`
+      const unix = Math.floor(Date.now() / 1000).toString()
+      const unixmilli = Date.now().toString()
+
+      let result = 'example'
+      if (config.NamerID === 'datetime') result = datetime
+      else if (config.NamerID === 'custom_datetime') {
+        result = config.DateTimeFormat
+          .replace('2006', year).replace('01', month).replace('02', day)
+          .replace('15', hour).replace('04', min).replace('05', sec)
+      } else if (config.NamerID === 'template') {
+        result = config.TemplateString
+          .replace('{original}', 'example').replace('{date}', date).replace('{time}', time)
+          .replace('{datetime}', datetime).replace('{year}', year).replace('{month}', month)
+          .replace('{day}', day).replace('{hour}', hour).replace('{minute}', min)
+          .replace('{second}', sec).replace('{unix}', unix).replace('{unixmilli}', unixmilli)
+          .replace('{count:4}', '0001').replace('{count:3}', '001').replace('{count:2}', '01').replace('{count}', '1')
+      } else if (config.NamerID === 'random') {
+        const len = Math.max(1, Math.min(config.RandomLength || 8, 32))
+        result = 'a3f9k2'.padEnd(len, 'x').slice(0, len)
+      } else if (config.NamerID === 'sequential') {
+        result = '001'
+      } else if (config.NamerID === 'sequential_datetime') {
+        result = `${datetime}-001`
+      }
+      return { from: 'example_file.jpg', to: `${result}.jpg` }
+    } catch {
+      return null
+    }
+  }, [config.NamerID, config.DateTimeFormat, config.TemplateString, config.RandomLength])
+
+  // Setup stepper steps
+  const stepperSteps = [
+    {
+      label: 'Pick Folder',
+      hint: config.WatchPath ? config.WatchPath.split(/[\\/]/).pop() || config.WatchPath : 'No folder selected',
+      done: Boolean(config.WatchPath),
+    },
+    {
+      label: 'Configure Pattern',
+      hint: selectedPatternID ? `Pattern: ${availablePatterns.find(p => p.id === selectedPatternID)?.name ?? selectedPatternID}` : 'Pick a naming pattern',
+      done: Boolean(selectedPatternID && selectedPatternID !== ''),
+    },
+    {
+      label: 'Start Watching',
+      hint: isWatching ? 'Watcher is active' : 'Press Start Watching',
+      done: isWatching,
+    },
+  ]
+
   const statusTone = isWatching ? 'active' : isBusy ? 'busy' : 'idle'
   const statusMessage = isWatching
     ? 'Watching for file changes...'
@@ -41,6 +104,9 @@ export default function ConfigurationView({
 
   return (
     <div className="config-section">
+      {/* Setup Stepper */}
+      <SetupStepper steps={stepperSteps} />
+
       {/* Directory Selection */}
       <div className="config-card directory-selection">
         <div className="card-header">
@@ -207,6 +273,16 @@ export default function ConfigurationView({
           </div>
         </div>
       </div>
+
+      {/* Live Rename Preview */}
+      {renamePreview && (
+        <div className="rename-preview-bar">
+          <span className="rename-preview-label">Preview</span>
+          <span className="rename-preview-from">{renamePreview.from}</span>
+          <span className="rename-preview-arrow">→</span>
+          <span className="rename-preview-to">{renamePreview.to}</span>
+        </div>
+      )}
 
       {/* Post-Rename Actions */}
       <div className="config-card compact full-width">

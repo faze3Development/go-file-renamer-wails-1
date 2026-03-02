@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import type { Config, BackendVerbosity, AppSettings } from './context/AppContext'
 import Sidebar from './components/Sidebar'
@@ -67,6 +67,7 @@ function AppShell() {
     handleSaveProfile,
     handleDeleteProfile,
     retryInitialization,
+    cancelWatcherConflict,
   } = useApp()
 
   const { config, isWatching, isBusy, currentView, showSettingsModal, settings, profiles, selectedProfile,
@@ -108,6 +109,50 @@ function AppShell() {
   const handleCloseSettings = useCallback(() => {
     dispatch({ type: 'SET_SHOW_SETTINGS_MODAL', payload: false })
   }, [dispatch])
+
+  // Stable refs so keydown handler always sees latest state/handlers
+  const isWatchingRef = useRef(isWatching)
+  const isBusyRef = useRef(isBusy)
+  const showSettingsRef = useRef(showSettingsModal)
+  const showConflictRef = useRef(state.showWatcherConflictModal)
+  const handleStartRef = useRef(handleStart)
+  const handleStopRef  = useRef(handleStop)
+  const cancelConflictRef = useRef(cancelWatcherConflict)
+  useEffect(() => { isWatchingRef.current = isWatching }, [isWatching])
+  useEffect(() => { isBusyRef.current = isBusy }, [isBusy])
+  useEffect(() => { showSettingsRef.current = showSettingsModal }, [showSettingsModal])
+  useEffect(() => { showConflictRef.current = state.showWatcherConflictModal }, [state.showWatcherConflictModal])
+  useEffect(() => { handleStartRef.current = handleStart }, [handleStart])
+  useEffect(() => { handleStopRef.current  = handleStop  }, [handleStop])
+  useEffect(() => { cancelConflictRef.current = cancelWatcherConflict }, [cancelWatcherConflict])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ctrl+Enter — toggle watcher
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault()
+        if (isBusyRef.current) return
+        if (isWatchingRef.current) {
+          handleStopRef.current()
+        } else {
+          handleStartRef.current()
+        }
+        return
+      }
+      // Escape — close topmost modal
+      if (e.key === 'Escape') {
+        if (showConflictRef.current) {
+          cancelConflictRef.current()
+          return
+        }
+        if (showSettingsRef.current) {
+          dispatch({ type: 'SET_SHOW_SETTINGS_MODAL', payload: false })
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [dispatch]) // stable — refs updated above
 
   if (isLoading) {
     return <LoadingBoundary />

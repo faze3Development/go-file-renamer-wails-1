@@ -87,8 +87,18 @@ export default function MonitoringView({ stats, logs }: Props) {
             ))}
             {logs.length === 0 && (
               <div className="log-placeholder">
-                <div className="placeholder-icon">◊</div>
-                <p>Activity logs will appear here when you start watching...</p>
+                <div className="empty-state-icon" aria-hidden="true">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3"/>
+                    <line x1="12" y1="19" x2="24" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="12" y1="25" x2="30" y2="25" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="12" y1="31" x2="20" y2="31" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="38" cy="12" r="6" fill="var(--accent-primary)" opacity="0.15" stroke="var(--accent-primary)" strokeWidth="1.5"/>
+                    <path d="M35.5 12h5M38 9.5v5" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <p className="empty-state-title">No activity yet</p>
+                <p className="empty-state-hint">Start watching a directory to see rename operations and events here in real time.</p>
               </div>
             )}
           </div>

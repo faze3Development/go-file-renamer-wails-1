@@ -56,6 +56,11 @@ export default function Sidebar({ currentView, isWatching, onSwitchView, onOpenS
           </div>
         </div>
       </nav>
+
+      <div className="shortcut-legend">
+        <div className="shortcut-row"><kbd>Ctrl+Enter</kbd><span>Start / Stop</span></div>
+        <div className="shortcut-row"><kbd>Esc</kbd><span>Close modal</span></div>
+      </div>
     </aside>
   )
 }
